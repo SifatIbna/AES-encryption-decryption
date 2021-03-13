@@ -2,7 +2,7 @@ from BitVector import *
 import time
 from Key_Scheduling import KeyScheduling
 
-# key_scheduling = {0: ['42', '55', '45', '54'], 1: ['20', '43', '53', '45'], 2: ['31', '36', '20', '42'], 3: ['61', '74', '63', '68'], 4: ['d1', 'ae', '00', 'bb'], 5: ['f1', 'ed', '53', 'fe'], 6: ['c0', 'db', '73', 'bc'], 7: ['a1', 'af', '10', 'd4'], 8: ['aa', '64', '48', '89'], 9: ['5b', '89', '1b', '77'], 10: ['9b', '52', '68', 'cb'], 11: ['3a', 'fd', '78', '1f'], 12: ['fa', 'd8', '88', '09'], 13: ['a1', '51', '93', '7e'], 14: ['3a', '03', 'fb', 'b5'], 
+# key_scheduling = {0: ['42', '55', '45', '54'], 1: ['20', '43', '53', '45'], 2: ['31', '36', '20', '42'], 3: ['61', '74', '63', '68'], 4: ['d1', 'ae', '00', 'bb'], 5: ['f1', 'ed', '53', 'fe'], 6: ['c0', 'db', '73', 'bc'], 7: ['a1', 'af', '10', 'd4'], 8: ['aa', '64', '48', '89'], 9: ['5b', '89', '1b', '77'], 10: ['9b', '52', '68', 'cb'], 11: ['3a', 'fd', '78', '1f'], 12: ['fa', 'd8', '88', '09'], 13: ['a1', '51', '93', '7e'], 14: ['3a', '03', 'fb', 'b5'],
 # 15: ['00', 'fe', '83', 'aa'], 16: ['49', '34', '24', '6a'], 17: ['e8', '65', 'b7', '14'], 18: ['d2', '66', '4c', 'a1'], 19: ['d2', '98', 'cf', '0b'], 20: ['1f', 'be', '0f', 'df'], 21: ['f7', 'db', 'b8', 'cb'], 22: ['25', 'bd', 'f4', '6a'], 23: ['f7', '25', '3b', '61'], 24: ['00', '5c', 'e0', 'b7'], 25: ['f7', '87', '58', '7c'], 26: ['d2', '3a', 'ac', '16'], 27: ['25', '1f', '97', '77'], 28: ['80', 'd4', '15', '88'], 29: ['77', '53', '4d', 'f4'], 30: ['a5', '69', 'e1', 'e2'], 31: ['80', '76', '76', '95'], 32: ['38', 'ec', '3f', '45'], 33: ['4f', 'bf', '72', 'b1'], 34: ['ea', 'd6', '93', '53'], 35: ['6a', 'a0', 'e5', 'c6'], 36: ['c3', '35', '8b', '47'], 37: ['8c', '8a', 'f9', 'f6'], 38: ['66', '5c', '6a', 'a5'], 39: ['0c', 'fc', '8f', '63'], 40: ['45', '46', '70', 'b9'], 41: ['c9', 'cc', '89', '4f'], 42: ['af', '90', 'e3', 'ea'], 43: ['a3', '6c', '6c', '89']}
 
 Sbox = (
@@ -44,86 +44,103 @@ InvSbox = (
 )
 
 Mixer = [
-    [BitVector(hexstring="02"), BitVector(hexstring="03"), BitVector(hexstring="01"), BitVector(hexstring="01")],
-    [BitVector(hexstring="01"), BitVector(hexstring="02"), BitVector(hexstring="03"), BitVector(hexstring="01")],
-    [BitVector(hexstring="01"), BitVector(hexstring="01"), BitVector(hexstring="02"), BitVector(hexstring="03")],
-    [BitVector(hexstring="03"), BitVector(hexstring="01"), BitVector(hexstring="01"), BitVector(hexstring="02")]
+    [BitVector(hexstring="02"), BitVector(hexstring="03"),
+     BitVector(hexstring="01"), BitVector(hexstring="01")],
+    [BitVector(hexstring="01"), BitVector(hexstring="02"),
+     BitVector(hexstring="03"), BitVector(hexstring="01")],
+    [BitVector(hexstring="01"), BitVector(hexstring="01"),
+     BitVector(hexstring="02"), BitVector(hexstring="03")],
+    [BitVector(hexstring="03"), BitVector(hexstring="01"),
+     BitVector(hexstring="01"), BitVector(hexstring="02")]
 ]
 
 InvMixer = [
-    [BitVector(hexstring="0E"), BitVector(hexstring="0B"), BitVector(hexstring="0D"), BitVector(hexstring="09")],
-    [BitVector(hexstring="09"), BitVector(hexstring="0E"), BitVector(hexstring="0B"), BitVector(hexstring="0D")],
-    [BitVector(hexstring="0D"), BitVector(hexstring="09"), BitVector(hexstring="0E"), BitVector(hexstring="0B")],
-    [BitVector(hexstring="0B"), BitVector(hexstring="0D"), BitVector(hexstring="09"), BitVector(hexstring="0E")]
+    [BitVector(hexstring="0E"), BitVector(hexstring="0B"),
+     BitVector(hexstring="0D"), BitVector(hexstring="09")],
+    [BitVector(hexstring="09"), BitVector(hexstring="0E"),
+     BitVector(hexstring="0B"), BitVector(hexstring="0D")],
+    [BitVector(hexstring="0D"), BitVector(hexstring="09"),
+     BitVector(hexstring="0E"), BitVector(hexstring="0B")],
+    [BitVector(hexstring="0B"), BitVector(hexstring="0D"),
+     BitVector(hexstring="09"), BitVector(hexstring="0E")]
 ]
 
 w0 = []
-w1  =[]
+w1 = []
 w2 = []
 w3 = []
 
+
 class AES():
-    def __init__(self,key_scheduling_list):
+    def __init__(self, key_scheduling_list, state_mat={}):
         self.key_scheduling = key_scheduling_list
-        self.state_mat = {}
-        self.take_input()
-    
-    def take_input(self):
+        self.state_mat = state_mat
+
+    def take_input(self, plainText):
         ch_list = []
-        plainText = input("Give Text to encrypt: ")
+        # plainText = input("Give Text to encrypt: ")
         for ch in plainText:
             word_bits = BitVector(textstring=ch)
             ch_list.append(word_bits.get_bitvector_in_hex())
+
         if len(ch_list) < 16:
-            for _ in range(0,16-len(ch_list)):
+            for _ in range(0, 16-len(ch_list)):
                 ch_list.append('0')
-        elif len(ch_list) >16 :
-            ch_list = ch_list[0:16].copy()
+
         w0 = ch_list[0:4]
         w1 = ch_list[4:8]
         w2 = ch_list[8:12]
         w3 = ch_list[12:16]
 
+        # print("IN HEX: ", ch_list)
+
         self.state_mat = {
-            0:w0,
-            1:w1,
-            2:w2,
-            3:w3
+            0: w0,
+            1: w1,
+            2: w2,
+            3: w3
         }
 
+    def set_round_keys(self, keys):
+        self.key_scheduling = keys
 
+    def set_state_mat(self, mat):
+        self.state_mat = mat
 
-    def xor_hex_hex(self,hexlist1,hexlist2):
+    def get_state_mat(self):
+        return self.state_mat
+
+    def xor_hex_hex(self, hexlist1, hexlist2):
         temp_list = []
-        
+
         for index in range(len(hexlist1)):
             hex_val1 = BitVector(hexstring=hexlist1[index])
             hex_val2 = BitVector(hexstring=hexlist2[index])
-            temp_list.append((hex_val1^hex_val2).get_bitvector_in_hex())
+            temp_list.append((hex_val1 ^ hex_val2).get_bitvector_in_hex())
         return temp_list
 
-    def xor_vals(self,hexlist):
+    def xor_vals(self, hexlist):
         sum_ = '0'
         for val in hexlist:
             hexval1 = BitVector(hexstring=val)
             hexval2 = BitVector(hexstring=sum_)
-            sum_ = str((hexval1^hexval2).get_bitvector_in_hex())
+            sum_ = str((hexval1 ^ hexval2).get_bitvector_in_hex())
         return sum_
 
-    def xor_hex_bit(self,rounding_constant,replace_list):
+    def xor_hex_bit(self, rounding_constant, replace_list):
         temp_list = []
-        
+
         for index in range(len(rounding_constant)):
             bit_val = BitVector(bitstring=rounding_constant[index])
             hex_val = BitVector(hexstring=replace_list[index])
-            temp_list.append((bit_val^hex_val).get_bitvector_in_hex())
+            temp_list.append((bit_val ^ hex_val).get_bitvector_in_hex())
         return temp_list
 
-    def multiply(self,mix_list,hex_list):
+    def multiply(self, mix_list, hex_list):
         AES_modulus = BitVector(bitstring='100011011')
         temp_list = []
         for count in range(4):
-            
+
             bv1 = mix_list[count]
             bv2 = BitVector(hexstring=hex_list[count])
             bv3 = bv1.gf_multiply_modular(bv2, AES_modulus, 8)
@@ -136,19 +153,20 @@ class AES():
             for val in self.state_mat[count]:
                 int_val = BitVector(hexstring=val).intValue()
                 int_val = Sbox[int_val]
-                hex_val = BitVector(intVal=int_val,size=8).get_bitvector_in_hex()
+                hex_val = BitVector(
+                    intVal=int_val, size=8).get_bitvector_in_hex()
                 replaced_list.append(hex_val)
             self.state_mat[count] = replaced_list.copy()
             replaced_list.clear()
 
-
-    def add_state_to_round_key(self,start):
+    def add_state_to_round_key(self, start):
         for count in range(4):
             # print(key_scheduling[start+count])
-            self.state_mat[count] = self.xor_hex_hex(self.state_mat[count],self.key_scheduling[start+count])
+            self.state_mat[count] = self.xor_hex_hex(
+                self.state_mat[count], self.key_scheduling[start+count])
 
     def make_matrix(self):
-        matrix = [[] for _ in range(4)];
+        matrix = [[] for _ in range(4)]
         # print(matrix)
         for i in range(4):
             for j in range(4):
@@ -164,17 +182,14 @@ class AES():
             temp_list = temp_list[count::]+temp_list[:count:]
             matrix[count] = temp_list
         return self.revert_back(matrix)
-    
 
-    def revert_back(self,matrix):
+    def revert_back(self, matrix):
         temp_list = []
         for i in range(4):
             for j in range(4):
                 temp_list.append(matrix[j][i])
             self.state_mat[i] = temp_list.copy()
             temp_list.clear()
-    
-
 
     def handle_multiplication(self):
         temp_list = []
@@ -183,34 +198,24 @@ class AES():
             for j in range(4):
                 list1 = temp_dict[j]
                 list2 = Mixer[i]
-                
-                mul_list = self.multiply(mix_list=list2,hex_list=list1)
-                
+
+                mul_list = self.multiply(mix_list=list2, hex_list=list1)
+
                 temp_list.append(self.xor_vals(mul_list))
             self.state_mat[i] = temp_list.copy()
             temp_list.clear()
 
-    def multiply_test(self,hexstring1,hexstring2):
+    def multiply_test(self, hexstring1, hexstring2):
         AES_modulus = BitVector(bitstring='100011011')
 
         bv1 = BitVector(hexstring=hexstring1)
-        bv2  = BitVector(hexstring=hexstring2)
+        bv2 = BitVector(hexstring=hexstring2)
         bv3 = bv1.gf_multiply_modular(bv2, AES_modulus, 8)
         # print()
         return bv3.get_bitvector_in_hex()
-    
-
-
-
-# temp_list = []
-# temp_list.append(multiply_test("01","63"))
-# temp_list.append(multiply_test("02","2f"))
-# temp_list.append(multiply_test("03","af"))
-# temp_list.append(multiply_test("01","a2"))
-# # print("TEST",temp_list)
 
     def encryption(self):
-
+        start_time = time.time()
 
         count = 0
         for loop in range(10):
@@ -235,11 +240,11 @@ class AES():
                 self.state_mat = self.make_matrix()
                 self.add_state_to_round_key(count)
                 count += 4
-        print(self.state_mat)
+        end_time = time.time()
+        # print("Encryption time: ", end_time-start_time)
+        # print(self.state_mat)
 
-
-
-# state_mat = [['54', 'b0', 'f7', '18'], ['f6', '2f', '03', 'c0'], ['a4', '55', 'ed', '78'], ['00', '7c', '63', '86']]
+        return end_time-start_time
 
     def inverse_rotation(self):
         matrix = self.make_matrix()
@@ -257,7 +262,8 @@ class AES():
             for val in self.state_mat[count]:
                 int_val = BitVector(hexstring=val).intValue()
                 int_val = InvSbox[int_val]
-                hex_val = BitVector(intVal=int_val,size=8).get_bitvector_in_hex()
+                hex_val = BitVector(
+                    intVal=int_val, size=8).get_bitvector_in_hex()
                 replaced_list.append(hex_val)
             self.state_mat[count] = replaced_list.copy()
             replaced_list.clear()
@@ -269,17 +275,16 @@ class AES():
             for j in range(4):
                 list1 = temp_dict[j]
                 list2 = InvMixer[i]
-                
-                mul_list = self.multiply(mix_list=list2,hex_list=list1)
-                
+
+                mul_list = self.multiply(mix_list=list2, hex_list=list1)
+
                 temp_list.append(self.xor_vals(mul_list))
             self.state_mat[i] = temp_list.copy()
             temp_list.clear()
-        
-    
+
     def decryption(self):
 
-
+        start_time = time.time()
         count = 40
         for loop in range(10):
 
@@ -304,28 +309,17 @@ class AES():
                 count -= 4
                 self.inv_multiplication()
                 self.state_mat = self.make_matrix()
-    
-        # print(state_mat)
+        end_time = time.time()
+        # print("Decrypt time: ", end_time-start_time)
 
-    def print_decyphered_text(self):
+        return end_time-start_time
 
-        final_words =""
+    def print_text(self):
+
+        final_words = ""
         for i in range(4):
             for j in range(4):
                 bv = BitVector(hexstring=self.state_mat[i][j])
                 final_words += str(bv.get_bitvector_in_ascii())
-        print(final_words)
-
-
-sch = KeyScheduling()
-sch.scheduler()
-aes = AES(sch.get_key())
-aes.encryption()
-start = time.time()
-aes.decryption()
-end = time.time()
-print("Decryption time :",end-start)
-aes.print_decyphered_text()
-
-
-
+        # print(final_words)
+        return final_words
