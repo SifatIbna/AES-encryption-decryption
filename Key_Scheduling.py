@@ -1,5 +1,5 @@
 from BitVector import *
-
+import time
 
 Sbox = (
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -24,8 +24,7 @@ w0 = []
 w1 = []
 w2 = []
 w3 = []
-initial_rounding_constant = ['01','00','00','00']
-
+initial_rounding_constant = ['01', '00', '00', '00']
 
 
 class KeyScheduling():
@@ -33,108 +32,122 @@ class KeyScheduling():
         self.key_list = []
         self.list_dict = {}
         self.input_key()
-    
+
     def input_key(self):
+        print("ENTER THE KEY :")
         key = input()
         for val in key:
             word_bits = BitVector(textstring=val)
             self.key_list.append(word_bits.get_bitvector_in_hex())
         if len(self.key_list) < 16:
-            for _ in range(0,16-len(self.key_list)):
+            for _ in range(0, 16-len(self.key_list)):
                 self.key_list.append('0')
-        elif len(self.key_list) >16 :
+        elif len(self.key_list) > 16:
             self.key_list = self.key_list[0:16].copy()
-
+        print("IN HEX: ", self.key_list)
         w0 = self.key_list[0:4]
         w1 = self.key_list[4:8]
         w2 = self.key_list[8:12]
         w3 = self.key_list[12:16]
         self.list_dict = {
-            0:w0,
-            1:w1,
-            2:w2,
-            3:w3,
+            0: w0,
+            1: w1,
+            2: w2,
+            3: w3,
         }
-    
+
     def get_key(self):
         return self.list_dict
 
-    def get_rounding_const(self,rounding_constant_list,step=0):
-        
-        if step>1:
+    def get_rounding_const(self, rounding_constant_list, step=0):
+
+        if step > 1:
 
             AES_modulus = BitVector(bitstring='100011011')
 
             a = BitVector(bitstring=initial_rounding_constant[0])
-            multiply = BitVector(intVal=2,size=8)
-            c = a.gf_multiply_modular(multiply, AES_modulus,8)
+            multiply = BitVector(intVal=2, size=8)
+            c = a.gf_multiply_modular(multiply, AES_modulus, 8)
             initial_rounding_constant[0] = str(c)
             return initial_rounding_constant
         else:
             return rounding_constant_list
 
-    def xor_hex_hex(self,hexlist1,hexlist2):
+    def xor_hex_hex(self, hexlist1, hexlist2):
         temp_list = []
-        
+
         for index in range(len(hexlist1)):
             hex_val1 = BitVector(hexstring=hexlist1[index])
             hex_val2 = BitVector(hexstring=hexlist2[index])
-            temp_list.append((hex_val1^hex_val2).get_bitvector_in_hex())
+            temp_list.append((hex_val1 ^ hex_val2).get_bitvector_in_hex())
         return temp_list
 
-    def xor_hex_bit(self,rounding_constant,replace_list):
+    def xor_hex_bit(self, rounding_constant, replace_list):
         temp_list = []
-        
+
         for index in range(len(rounding_constant)):
             bit_val = BitVector(bitstring=rounding_constant[index])
             hex_val = BitVector(hexstring=replace_list[index])
-            temp_list.append((bit_val^hex_val).get_bitvector_in_hex())
+            temp_list.append((bit_val ^ hex_val).get_bitvector_in_hex())
         return temp_list
 
-
-    def handle_replaement(self,end_word):
+    def handle_replaement(self, end_word):
         replaced_list = []
+        # print(end_word)
         for val in end_word:
+            # print(val)
             int_val = BitVector(hexstring=val).intValue()
             int_val = Sbox[int_val]
-            hex_val = BitVector(intVal=int_val,size=8).get_bitvector_in_hex()
+            hex_val = BitVector(intVal=int_val, size=8).get_bitvector_in_hex()
             replaced_list.append(hex_val)
         return replaced_list
 
-    def hangle_g_func(self,end_word,step):
-        end_word = end_word[1::]+end_word[:1:] # Rotation
-        replaced_list = self.handle_replaement(end_word)
-        
-        rounding_constant = self.get_rounding_const(rounding_constant_list=initial_rounding_constant,step=step)
-        
-        g_list = self.xor_hex_bit(rounding_constant,replaced_list)
+    def hangle_g_func(self, end_word, step):
+        # print(end_word)
+        rotate_word = end_word[1::]+end_word[:1:]  # Rotation
+        # print(rotate_word)
+        replaced_list = self.handle_replaement(rotate_word)
+        # print(replaced_list)
+        rounding_constant = self.get_rounding_const(
+            rounding_constant_list=initial_rounding_constant, step=step)
+
+        g_list = self.xor_hex_bit(rounding_constant, replaced_list)
         return g_list
 
     def scheduler(self):
-
+        start_time = time.time()
         start = 0
         g_func = []
 
-        for loop in range(4,44,1):
+        for loop in range(4, 44, 1):
 
-            if loop <7:
+            if loop < 7:
                 step = 1
-            else: 
+            else:
                 step = 2
 
             if loop % 4 == 0:
-                
+
                 # print(self.list_dict[loop-1])
-                g_func = self.hangle_g_func(self.list_dict[loop-1],step=step)
+                g_func = self.hangle_g_func(self.list_dict[loop-1], step=step)
                 # print(g_func)
-                self.list_dict[loop] = self.xor_hex_hex(self.list_dict[start],g_func)
+                self.list_dict[loop] = self.xor_hex_hex(
+                    self.list_dict[start], g_func)
+                # if loop == 4:
+                #     break
                 start += 1
             else:
-                self.list_dict[loop] = self.xor_hex_hex(self.list_dict[start+3],self.list_dict[start])
-                start+=1
 
+                self.list_dict[loop] = self.xor_hex_hex(
+                    self.list_dict[start+3], self.list_dict[start])
+                # if loop ==7:
+                #     print(start)
+                #     break
 
-
+                start += 1
+        end_time = time.time()
+        # print("Key Scheduling time: ",end_time-start_time)
+        return end_time-start_time
 
         # print(self.list_dict)
 
@@ -142,4 +155,3 @@ class KeyScheduling():
 # sch = KeyScheduling()
 # sch.scheduler()
 # print(sch.get_key())
-
